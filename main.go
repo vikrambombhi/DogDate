@@ -1,7 +1,7 @@
 package main
 
 import (
-	"context"
+	"database/sql"
 	"fmt"
 	"log"
 	"net/http"
@@ -10,39 +10,42 @@ import (
 
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
+	"github.com/vikrambombhi/DogDate/models"
 )
 
-type key int
-
-const (
-	confKey key = iota
-)
-
-type config struct {
-	address string
+type Env struct {
+	db *sql.DB
 }
 
-func logger(next http.Handler, conf config) http.Handler {
+var env Env
+
+func middleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		log.Println("Middleware ran")
-		newContext := context.WithValue(r.Context(), confKey, conf)
-		r = r.WithContext(newContext)
 		next.ServeHTTP(w, r)
 	})
 }
 
 func hello(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintln(w, "Hello World!")
+	models.GetUsers(env.db)
 }
 
 func main() {
+	var err error
+	env.db, err = models.Setup("root:Vi20bo17@tcp(localhost:3306)/DogDate")
+	if err != nil {
+		panic(err)
+	}
+	defer env.db.Close()
+
 	router := mux.NewRouter()
 	router.HandleFunc("/", hello)
-	conf := config{address: ":8080"}
-	logger := handlers.LoggingHandler(os.Stdout, logger(router, conf))
+	middleware := handlers.LoggingHandler(os.Stdout, middleware(router))
+
 	server := http.Server{
 		Addr:           ":8080",
-		Handler:        logger,
+		Handler:        middleware,
 		ReadTimeout:    10 * time.Second,
 		WriteTimeout:   10 * time.Second,
 		MaxHeaderBytes: 1 << 20,
