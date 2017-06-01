@@ -17,7 +17,7 @@ func GetUsers(db *sql.DB) {
 		id    int
 		email string
 	)
-	rows, err := db.Query("select id, email from Users where id = ?", 2)
+	rows, err := db.Query("select id, email from Dogs where id = ?", 2)
 	if err != nil {
 		log.Fatal(err)
 	}

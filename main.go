@@ -2,50 +2,31 @@ package main
 
 import (
 	"database/sql"
-	"fmt"
-	"log"
 	"net/http"
-	"os"
 	"time"
 
-	"github.com/gorilla/handlers"
+	_ "github.com/go-sql-driver/mysql"
 	"github.com/gorilla/mux"
-	"github.com/vikrambombhi/DogDate/models"
+	"github.com/vikrambombhi/DogDate/handlers"
 )
 
-type Env struct {
-	db *sql.DB
-}
-
-var env Env
-
-func middleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		log.Println("Middleware ran")
-		next.ServeHTTP(w, r)
-	})
-}
-
-func hello(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintln(w, "Hello World!")
-	models.GetUsers(env.db)
-}
-
 func main() {
-	var err error
-	env.db, err = models.Setup("root:Vi20bo17@tcp(localhost:3306)/DogDate")
+	dsn := "root:Vi20bo17@tcp(localhost:3306)/DogDate"
+	db, err := sql.Open("mysql", dsn)
 	if err != nil {
 		panic(err)
 	}
-	defer env.db.Close()
+	defer db.Close()
+
+	handler := handlers.New(db)
 
 	router := mux.NewRouter()
-	router.HandleFunc("/", hello)
-	middleware := handlers.LoggingHandler(os.Stdout, middleware(router))
+	router.HandleFunc("/", handler.GetAllDogs)
+	router.HandleFunc("/test", hello)
 
 	server := http.Server{
 		Addr:           ":8080",
-		Handler:        middleware,
+		Handler:        router,
 		ReadTimeout:    10 * time.Second,
 		WriteTimeout:   10 * time.Second,
 		MaxHeaderBytes: 1 << 20,
