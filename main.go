@@ -23,6 +23,7 @@ func main() {
 	router := mux.NewRouter()
 	router.HandleFunc("/", handler.GetAllDogs)
 	router.HandleFunc("/login", handler.Login)
+	router.HandleFunc("/validate", handler.ValidateToken)
 
 	server := http.Server{
 		Addr:           ":8080",

@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net/http"
 	"os"
@@ -13,10 +14,14 @@ import (
 	"github.com/vikrambombhi/DogDate/models"
 )
 
+type Claims struct {
+	Email string `json:"email"`
+	jwt.StandardClaims
+}
+
 var secret = []byte(os.Getenv("SECRET"))
 
-func generateToken(claims jwt.MapClaims) *jwt.Token {
-	claims["exp"] = time.Now().Add(24 * time.Hour).Unix()
+func generateToken(claims Claims) *jwt.Token {
 	return jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 }
 
@@ -48,9 +53,13 @@ func (handler *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// Create JWT token to send back
-	claims := jwt.MapClaims{
-		"email": user.Email,
-		"name":  user.Name,
+	claims := Claims{
+		user.Email,
+		jwt.StandardClaims{
+			ExpiresAt: time.Now().Add(time.Hour * 24).Unix(),
+			IssuedAt:  time.Now().Unix(),
+			Issuer:    "test",
+		},
 	}
 	token := generateToken(claims)
 	tokenString, err := token.SignedString(secret)
@@ -61,4 +70,30 @@ func (handler *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	// Send JWT
 	w.Header().Set("WWW-Authenticatr", `Basic realm="Restricted"`)
 	json.NewEncoder(w).Encode(tokenString)
+}
+
+func (handler *Handler) ValidateToken(w http.ResponseWriter, r *http.Request) {
+	tokenString := "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InZib21iaGlAZ21haWwuY29tIiwiZXhwIjoxNDk2NDY0ODMxLCJpc3MiOiJ0ZXN0In0.nZgWacIGza0KbVhrNuUZj9Z2kwWMT2MNMj7iErjCYyk"
+
+	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
+		_, ok := token.Method.(*jwt.SigningMethodHMAC)
+		if !ok {
+			return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
+		}
+		return secret, nil
+	})
+
+	if err != nil {
+		log.Print(err)
+		//	return nil, err
+	}
+
+	claims, ok := token.Claims.(*Claims)
+	if !ok || !token.Valid {
+		log.Print("Token not valid")
+		//return nil, fmt.Errorf("Token not valid")
+	}
+
+	log.Print(claims)
+	//return claims, nil
 }
