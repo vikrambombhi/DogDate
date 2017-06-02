@@ -8,20 +8,20 @@ import (
 type Dog struct {
 	ID    int    `json:"id"`
 	Name  string `json:"name"`
-	Email string `json:"email"`
-	Breed string `json:"breed`
+	Breed string `json:"breed"`
+	Owner int    `json:"owner"`
 }
 
 func GetAllDogs(db *sql.DB) []Dog {
 	dogs := []Dog{}
-	rows, err := db.Query("select id, name, email, breed from Dogs")
+	rows, err := db.Query("select id, name, breed, owner from Dogs")
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer rows.Close()
 	for rows.Next() {
 		var dog Dog
-		err := rows.Scan(&dog.ID, &dog.Name, &dog.Email, &dog.Breed)
+		err := rows.Scan(&dog.ID, &dog.Name, &dog.Breed, &dog.Owner)
 		if err != nil {
 			log.Fatal(err)
 		}
