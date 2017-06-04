@@ -15,13 +15,23 @@ import (
 )
 
 type Claims struct {
-	Email string `json:"email"`
-	jwt.StandardClaims
+	Email              string `json:"email"`
+	ID                 int    `json:"id"`
+	jwt.StandardClaims `json:"StandardClaims"`
 }
 
 var secret = []byte(os.Getenv("SECRET"))
 
-func generateToken(claims Claims) *jwt.Token {
+func generateToken(user models.User) *jwt.Token {
+	claims := Claims{
+		user.Email,
+		user.ID,
+		jwt.StandardClaims{
+			ExpiresAt: time.Now().Add(time.Hour * 24).Unix(),
+			IssuedAt:  time.Now().Unix(),
+			Issuer:    "DogDate",
+		},
+	}
 	return jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
 }
 
@@ -52,16 +62,7 @@ func (handler *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Create JWT token to send back
-	claims := Claims{
-		user.Email,
-		jwt.StandardClaims{
-			ExpiresAt: time.Now().Add(time.Hour * 24).Unix(),
-			IssuedAt:  time.Now().Unix(),
-			Issuer:    "test",
-		},
-	}
-	token := generateToken(claims)
+	token := generateToken(user)
 	tokenString, err := token.SignedString(secret)
 	if err != nil {
 		log.Fatal(err)
@@ -72,9 +73,7 @@ func (handler *Handler) Login(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(tokenString)
 }
 
-func (handler *Handler) ValidateToken(w http.ResponseWriter, r *http.Request) {
-	tokenString := "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InZib21iaGlAZ21haWwuY29tIiwiZXhwIjoxNDk2NDY0ODMxLCJpc3MiOiJ0ZXN0In0.nZgWacIGza0KbVhrNuUZj9Z2kwWMT2MNMj7iErjCYyk"
-
+func validateToken(tokenString string) (*Claims, error) {
 	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
 		_, ok := token.Method.(*jwt.SigningMethodHMAC)
 		if !ok {
@@ -84,16 +83,28 @@ func (handler *Handler) ValidateToken(w http.ResponseWriter, r *http.Request) {
 	})
 
 	if err != nil {
-		log.Print(err)
-		//	return nil, err
+		return nil, err
 	}
 
 	claims, ok := token.Claims.(*Claims)
 	if !ok || !token.Valid {
-		log.Print("Token not valid")
-		//return nil, fmt.Errorf("Token not valid")
+		return nil, fmt.Errorf("Token not valid")
 	}
+	return claims, nil
+}
 
-	log.Print(claims)
-	//return claims, nil
+func (handler *Handler) GetUser(r *http.Request) (models.User, error) {
+	auth := r.Header.Get("Authorization")
+	var user models.User
+	if auth == "" {
+		return user, fmt.Errorf("Authorization header is empty")
+	}
+	token := strings.TrimPrefix(auth, "Bearer ")
+	claims, err := validateToken(token)
+	if err != nil {
+		log.Print(err)
+		return user, err
+	}
+	user = models.GetUserByEmail(handler.DB, claims.Email)
+	return user, nil
 }
