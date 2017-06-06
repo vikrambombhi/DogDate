@@ -13,11 +13,24 @@ type Dog struct {
 	Size  string `json:"size"`
 }
 
-func GetDogByOwner(db *sql.DB, userID int) Dog {
-	dog := Dog{}
-	err := db.QueryRow("select id, owner, name, breed, size from Dogs where owner=?", userID).Scan(&dog.Owner, &dog.ID, &dog.Name, &dog.Breed, &dog.Size)
+func GetDogsByUserID(db *sql.DB, userID int) []Dog {
+	dogs := []Dog{}
+	rows, err := db.Query("select id, owner, name, breed, size from Dogs where owner=?", userID)
 	if err != nil {
 		log.Fatal(err)
 	}
-	return dog
+	defer rows.Close()
+	for rows.Next() {
+		var dog Dog
+		err := rows.Scan(&dog.Owner, &dog.ID, &dog.Name, &dog.Breed, &dog.Size)
+		if err != nil {
+			log.Fatal(err)
+		}
+		dogs = append(dogs, dog)
+	}
+	err = rows.Err()
+	if err != nil {
+		log.Fatal(err)
+	}
+	return dogs
 }

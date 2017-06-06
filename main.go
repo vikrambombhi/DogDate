@@ -27,7 +27,6 @@ func middleware(next http.Handler) http.Handler {
 			http.Error(w, "Token not valid", http.StatusForbidden)
 			return
 		}
-		log.Print(user)
 		ctx := r.Context()
 		ctx = context.WithValue(ctx, "user", user)
 		r = r.WithContext(ctx)
@@ -51,6 +50,7 @@ func main() {
 	router.HandleFunc("/matches/matched", handler.GetMatched)
 	// router.HandleFunc("/matches/history")
 	router.HandleFunc("/matches/purposals", handler.GetLikedBy)
+	router.HandleFunc("/account", handler.GetUserInfo).Methods("get")
 
 	server := http.Server{
 		Addr:           ":8080",
