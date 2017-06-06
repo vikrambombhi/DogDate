@@ -7,29 +7,17 @@ import (
 
 type Dog struct {
 	ID    int    `json:"id"`
+	Owner int    `json:"owner"`
 	Name  string `json:"name"`
 	Breed string `json:"breed"`
-	Owner int    `json:"owner"`
+	Size  string `json:"size"`
 }
 
-func GetAllDogs(db *sql.DB) []Dog {
-	dogs := []Dog{}
-	rows, err := db.Query("select id, name, breed, owner from Dogs")
+func GetDogByOwner(db *sql.DB, userID int) Dog {
+	dog := Dog{}
+	err := db.QueryRow("select id, owner, name, breed, size from Dogs where owner=?", userID).Scan(&dog.Owner, &dog.ID, &dog.Name, &dog.Breed, &dog.Size)
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer rows.Close()
-	for rows.Next() {
-		var dog Dog
-		err := rows.Scan(&dog.ID, &dog.Name, &dog.Breed, &dog.Owner)
-		if err != nil {
-			log.Fatal(err)
-		}
-		dogs = append(dogs, dog)
-	}
-	err = rows.Err()
-	if err != nil {
-		log.Fatal(err)
-	}
-	return dogs
+	return dog
 }

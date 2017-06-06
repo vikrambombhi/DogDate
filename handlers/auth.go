@@ -16,16 +16,18 @@ import (
 
 type Claims struct {
 	Email              string `json:"email"`
-	ID                 int    `json:"id"`
+	UserID             int    `json:"userID"`
+	dogID              int    `json:"dogID"`
 	jwt.StandardClaims `json:"StandardClaims"`
 }
 
 var secret = []byte(os.Getenv("SECRET"))
 
-func generateToken(user models.User) *jwt.Token {
+func generateToken(user models.User, dog models.Dog) *jwt.Token {
 	claims := Claims{
 		user.Email,
 		user.ID,
+		dog.ID,
 		jwt.StandardClaims{
 			ExpiresAt: time.Now().Add(time.Hour * 24).Unix(),
 			IssuedAt:  time.Now().Unix(),
@@ -62,7 +64,11 @@ func (handler *Handler) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token := generateToken(user)
+	// Find users dog (to make things easyier later)
+	dog := models.GetDogByOwner(handler.DB, user.ID)
+
+	// Generate token
+	token := generateToken(user, dog)
 	tokenString, err := token.SignedString(secret)
 	if err != nil {
 		log.Fatal(err)

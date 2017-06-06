@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"database/sql"
 	"log"
 	"net/http"
@@ -27,7 +28,9 @@ func middleware(next http.Handler) http.Handler {
 			return
 		}
 		log.Print(user)
-
+		ctx := r.Context()
+		ctx = context.WithValue(ctx, "user", user)
+		r = r.WithContext(ctx)
 		next.ServeHTTP(w, r)
 	})
 }
@@ -43,8 +46,11 @@ func main() {
 	handler = handlers.New(db)
 
 	router := mux.NewRouter()
-	router.HandleFunc("/", handler.GetAllDogs)
 	router.HandleFunc("/login", handler.Login)
+	router.HandleFunc("/matches/available", handler.GetPotentialMatches)
+	router.HandleFunc("/matches/matched", handler.GetMatched)
+	// router.HandleFunc("/matches/history")
+	router.HandleFunc("/matches/purposals", handler.GetLikedBy)
 
 	server := http.Server{
 		Addr:           ":8080",
