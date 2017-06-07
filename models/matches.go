@@ -78,3 +78,9 @@ func GetLikedBy(db *sql.DB, dogID int) []Dog {
 	}
 	return dogs
 }
+
+func LikeByDogId(db *sql.DB, dogID int, otherDogID int, liked bool) error {
+	_, err := db.Exec("insert into Matches (dogID, otherDogID, liked) values (?, ?, ?)", dogID, otherDogID, liked)
+	return err
+
+}

@@ -50,6 +50,7 @@ func main() {
 	router.HandleFunc("/matches/matched", handler.GetMatched)
 	// router.HandleFunc("/matches/history")
 	router.HandleFunc("/matches/purposals", handler.GetLikedBy)
+	router.HandleFunc("/matches", handler.LikeDog).Methods("POST")
 	router.HandleFunc("/user/{userID:[0-9]+}", handler.GetAccountInfo).Methods("GET")
 
 	server := http.Server{
