@@ -46,10 +46,10 @@ func main() {
 
 	router := mux.NewRouter()
 	router.HandleFunc("/login", handler.Login)
-	router.HandleFunc("/matches/available", handler.GetPotentialMatches)
 	router.HandleFunc("/matches/matched", handler.GetMatched)
 	// router.HandleFunc("/matches/history")
 	router.HandleFunc("/matches/purposals", handler.GetLikedBy)
+	router.HandleFunc("/matches", handler.GetPotentialMatches).Methods("GET")
 	router.HandleFunc("/matches", handler.LikeDog).Methods("POST")
 	router.HandleFunc("/user/{userID:[0-9]+}", handler.GetAccountInfo).Methods("GET")
 
