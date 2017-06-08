@@ -10,6 +10,7 @@ DogDate is a dating app for dogs. The main use case for this app is to find/orga
 | /matches/matched   | GET | get dogs that you have been paired with  | list of type Dog |
 | /matches/history   | GET | get dogs you have liked in the past      | list of type Dog |
 | /matches/purposals | GET | get dogs who have shown interest in you  | list of type Dog |
+| /users/{userID}    | GET | get user info using the users ID         | JSON with User and list of Dogs |
 
 ### Response types
 ##### Dog
